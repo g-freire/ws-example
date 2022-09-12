@@ -19,8 +19,8 @@ func getLastIBOPJob(host, db string, stopchan <-chan bool) {
 	for {
 		select {
 		default:
-			Pool.Broadcast <- "result"
-			time.Sleep(1000 * time.Millisecond)
+			Pool.Broadcast <- "TEST"
+			time.Sleep(time.Second)
 
 		case <-stopchan:
 			fmt.Print("\n CLOSING INFINITE QUERY LOOP \n")

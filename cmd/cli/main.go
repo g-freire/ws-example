@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+	"ws-example/internal/profile"
 	msg_http "ws-example/pkg/msg/transport/http"
 	msg_ws "ws-example/pkg/msg/transport/websocket"
 
@@ -18,7 +20,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+
+
 func main() {
+	defer profile.Start("main")()
+
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+}
+
+
+func run() error{
 	// Config loads info from env files
 	conf := config.GetConfig()
 
@@ -32,6 +45,7 @@ func main() {
 	msg_http.ApplyRoutes(r)
 
 	// WEBSOCKET
+	//var ws sync.WaitGroup
 	go msg_ws.Pool.Start("", "")
 	msg_ws.ApplyRoutes(r)
 
@@ -56,4 +70,5 @@ func main() {
 		log.Fatal("Server forced to shutdown:", err)
 	}
 	log.Println("Server exiting")
+	return nil
 }
