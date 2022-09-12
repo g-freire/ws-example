@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 	"ws-example/internal/profile"
@@ -32,8 +33,14 @@ func main() {
 
 
 func run() error{
-	// Config loads info from env files
+	// CONFIG
 	conf := config.GetConfig()
+
+	// WS POOL
+	var wg sync.WaitGroup
+	p := msg_ws.NewPool(wg)
+	h := msg_ws.NewHandler(*p, conf)
+	go p.Start("", "")
 
 	// WEB SERVER SETUP
 	r := gin.Default()
@@ -43,12 +50,8 @@ func run() error{
 	// ROUTING
 	// REST
 	msg_http.ApplyRoutes(r)
-
 	// WEBSOCKET
-	//var ws sync.WaitGroup
-	go msg_ws.Pool.Start("", "")
-	msg_ws.ApplyRoutes(r)
-
+	msg_ws.ApplyRoutes(r, *h)
 	srv := &http.Server{
 		Addr:    ":" + conf.PortHTTP,
 		Handler: r,
@@ -64,8 +67,9 @@ func run() error{
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutting down server...")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	wg.Wait()
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server forced to shutdown:", err)
 	}

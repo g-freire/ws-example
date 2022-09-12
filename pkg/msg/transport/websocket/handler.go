@@ -6,9 +6,20 @@ import (
 	"github.com/gorilla/websocket"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
+	"ws-example/internal/config"
 )
 
-func GetLastEvent(c *gin.Context) {
+type Handler struct {
+	pool PoolStructure
+	conf *config.Config
+}
+
+func NewHandler(pool PoolStructure, conf *config.Config) *Handler {
+	return &Handler{pool: pool, conf: conf}
+}
+
+
+func (h *Handler)GetLastEvent(c *gin.Context) {
 	conn, error := (&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(c.Writer, c.Request, nil)
 	if error != nil {
 		http.NotFound(c.Writer, c.Request)
@@ -18,9 +29,9 @@ func GetLastEvent(c *gin.Context) {
 	uuid := uuid.Must(uuid.NewV4(), error).String()
 	client := &Client{Id: uuid, Ip: "", Socket: conn, ClientChan: make(chan interface{})}
 
-	Pool.Register <- client
+	h.pool.Register <- client
 	fmt.Println("A new ws client has connected.", client.Id, client.Ip)
 
-	go client.Read(c)
-	go client.Write(client)
+	go client.Read(h, c)
+	go client.Write(h,client)
 }
