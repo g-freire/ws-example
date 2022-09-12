@@ -14,12 +14,12 @@ type Client struct {
 	ClientChan chan interface{}
 }
 
-func getLastIBOPJob(host, db string, stopchan <-chan bool) {
+func getLastJob(p *PoolStructure,  stopchan <-chan bool) {
 	//defer func(){fmt.Print("FINAL WORK TO DO")}()
 	for {
 		select {
 		default:
-			Pool.Broadcast <- "TEST"
+			p.Broadcast <- "TEST"
 			time.Sleep(time.Second)
 
 		case <-stopchan:
@@ -29,24 +29,28 @@ func getLastIBOPJob(host, db string, stopchan <-chan bool) {
 	}
 }
 
-func (c *Client) Read(ctx *gin.Context) {
+func (c *Client) Read(h *Handler, ctx *gin.Context) {
+	h.pool.WG.Add(1)
 	defer func() {
-		Pool.Unregister <- c
+		h.pool.Unregister <- c
 		c.Socket.Close()
+		h.pool.WG.Done()
 	}()
 	for {
 		_, _, err := c.Socket.ReadMessage()
 		if err != nil {
-			Pool.Unregister <- c
+			h.pool.Unregister <- c
 			c.Socket.Close()
 			break
 		}
 	}
 }
 
-func (c *Client) Write(client *Client) {
+func (c *Client) Write(h *Handler, client *Client) {
+	h.pool.WG.Add(1)
 	defer func() {
 		c.Socket.Close()
+		h.pool.WG.Done()
 	}()
 
 	for {
