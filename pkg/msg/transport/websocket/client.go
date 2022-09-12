@@ -1,10 +1,8 @@
 package websocket
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"time"
 )
 
 type Client struct {
@@ -12,21 +10,6 @@ type Client struct {
 	Ip         string
 	Socket     *websocket.Conn
 	ClientChan chan interface{}
-}
-
-func getLastJob(p *PoolStructure,  stopchan <-chan bool) {
-	//defer func(){fmt.Print("FINAL WORK TO DO")}()
-	for {
-		select {
-		default:
-			p.Broadcast <- "TEST"
-			time.Sleep(time.Second)
-
-		case <-stopchan:
-			fmt.Print("\n CLOSING INFINITE QUERY LOOP \n")
-			return
-		}
-	}
 }
 
 func (c *Client) Read(h *Handler, ctx *gin.Context) {

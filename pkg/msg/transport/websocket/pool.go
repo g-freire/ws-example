@@ -38,7 +38,7 @@ func (pool *PoolStructure) Start(host, db string) {
 				jobChan = make(chan bool)
 				pool.WG.Add(1)
 				defer pool.WG.Done()
-				go getLastJob(pool, jobChan)
+				go Job(pool, jobChan)
 			}
 		case client := <-pool.Unregister:
 			if _, ok := pool.Clients[client]; ok {
